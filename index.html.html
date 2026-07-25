@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio — 3D Build Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Inter:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+  :root{
+    --ink:#0B0E14;
+    --line:#232936;
+    --paper:#F5F3EE;
+    --slate:#8A93A6;
+    --amber:#FFB000;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--ink);
+    color:var(--paper);
+    font-family:'Inter',sans-serif;
+    line-height:1.6;
+  }
+  a{color:inherit;}
+  ::selection{background:var(--amber);color:var(--ink);}
+
+  #hero{
+    position:relative;
+    height:100vh;
+    overflow:hidden;
+    border-bottom:1px solid var(--line);
+  }
+  #hero-bg{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    background-image:url('IMG_7479.jpeg');
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
+    z-index:0;
+  }
+  #hero-bg::after{
+    content:"";
+    position:absolute;
+    inset:0;
+    background:linear-gradient(180deg, rgba(11,14,20,0.55) 0%, rgba(11,14,20,0.75) 60%, rgba(11,14,20,0.95) 100%);
+  }
+  #scene-canvas{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    display:block;
+    z-index:1;
+  }
+  .hero-inner{
+    position:relative;
+    z-index:2;
+    max-width:900px;
+    margin:0 auto;
+    padding:80px 24px 0;
+    pointer-events:none;
+  }
+  .hero-header{
+    display:flex;
+    align-items:center;
+    gap:32px;
+  }
+  .hero-text{ min-width:0; }
+  @media (max-width:560px){
+    .hero-header{ flex-direction:column; align-items:flex-start; gap:20px; }
+  }
+  .tag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    color:var(--amber);
+    letter-spacing:0.05em;
+  }
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:clamp(2.4rem,7vw,4.2rem);
+    margin:14px 0 6px;
+    font-weight:700;
+  }
+  .role{
+    color:var(--slate);
+    font-size:1.05rem;
+    margin-bottom:22px;
+  }
+  nav{
+    display:flex;
+    gap:22px;
+    margin-top:26px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    pointer-events:all;
+  }
+  nav a{
+    color:var(--slate);
+    text-decoration:none;
+    border-bottom:1px solid transparent;
+    padding-bottom:2px;
+    transition:color .2s, border-color .2s;
+  }
+  nav a:hover, nav a:focus-visible{
+    color:var(--amber);
+    border-color:var(--amber);
+  }
+  .scroll-hint{
+    position:absolute;
+    bottom:28px; left:50%;
+    transform:translateX(-50%);
+    z-index:2;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--slate);
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+  }
+
+  section{
+    max-width:900px;
+    margin:0 auto;
+    padding:56px 24px;
+    border-bottom:1px solid var(--line);
+  }
+  section:last-of-type{border-bottom:none;}
+  .section-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--slate);
+    text-transform:uppercase;
+    letter-spacing:0.1em;
+    margin-bottom:24px;
+  }
+
+  .log{ position:relative; padding-left:28px; }
+  .log::before{
+    content:""; position:absolute;
+    left:6px; top:6px; bottom:6px; width:1px;
+    background:var(--line);
+  }
+  .entry{ position:relative; margin-bottom:32px; }
+  .entry::before{
+    content:""; position:absolute;
+    left:-28px; top:6px; width:9px; height:9px;
+    border-radius:50%; background:var(--amber);
+  }
+  .entry .commit{ font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--slate); }
+  .entry h3{ font-family:'Space Grotesk',sans-serif; font-size:1.15rem; margin:6px 0 4px; }
+  .entry p{ color:var(--slate); font-size:0.95rem; margin:0; }
+
+  .proj{
+    display:grid;
+    grid-template-columns:1fr auto;
+    align-items:baseline;
+    gap:4px 16px;
+    padding:18px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .proj:last-child{border-bottom:none;}
+  .proj h3{ font-family:'Space Grotesk',sans-serif; font-size:1.1rem; margin:0; grid-column:1; }
+  .proj .stack{
+    font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--amber);
+    grid-column:2; text-align:right; white-space:nowrap;
+  }
+  .proj p{ grid-column:1/-1; color:var(--slate); font-size:0.95rem; margin:6px 0 0; max-width:640px; }
+  .proj a.link{
+    grid-column:1/-1; font-family:'JetBrains Mono',monospace; font-size:12px;
+    color:var(--paper); text-decoration:none; margin-top:8px; display:inline-block;
+    border-bottom:1px solid var(--slate); width:fit-content;
+  }
+  .proj a.link:hover{border-color:var(--amber); color:var(--amber);}
+
+  .contact-row{
+    display:flex; flex-wrap:wrap; gap:14px 28px;
+    font-family:'JetBrains Mono',monospace; font-size:14px;
+  }
+  .contact-row a{ text-decoration:none; border-bottom:1px solid var(--line); padding-bottom:2px; }
+  .contact-row a:hover{color:var(--amber); border-color:var(--amber);}
+
+  footer{
+    max-width:900px; margin:0 auto; padding:32px 24px 60px;
+    color:var(--slate); font-family:'JetBrains Mono',monospace; font-size:12px;
+  }
+
+  @media (max-width:520px){
+    .proj{grid-template-columns:1fr;}
+    .proj .stack{grid-column:1; text-align:left;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    html{scroll-behavior:auto;}
+  }
+</style>
+</head>
+<body>
+
+<section id="hero">
+  <div id="hero-bg"></div>
+  <canvas id="scene-canvas"></canvas>
+  <div class="hero-inner">
+    <div class="hero-header">
+      <div class="hero-text">
+        <div class="tag"></div>
+        <h1>MOHAMED ASKER J</h1>
+        <div class="role">AI/ML Engineer</div>
+      </div>
+    </div>
+    <nav>
+      <a href="#work">work</a>
+      <a href="#projects">projects</a>
+      <a href="#about">about</a>
+      <a href="#contact">contact</a>
+    </nav>
+  </div>
+  <div class="scroll-hint">scroll ↓</div>
+</section>
+
+<section id="work">
+  <div class="section-label">01 — experience</div>
+  <div class="log">
+    <div class="entry">
+      <div class="commit">June 2025 – Jul 2025</div>
+      <h3>Machine Learning Intern </h3>
+      <p>• Developed a machine learning-based weather forecasting model using historical meteorological data,applying supervised learning techniques to generate predictive insights
+• Performed end-to-end data preprocessing, feature engineering, and model training in Python, improving data quality and model readiness for deployment
+
+<br>
+• Evaluated model performance using standard metrics and built data visualizations to communicate weather prediction trends to stakeholders
+<br>
+
+• Observed workplace policies, compliance procedures, and internal communication practices.
+
+
+
+</p>
+    </div>
+    <div class="entry">
+      <div class="commit">2026 </div>
+      <h3> App Devolper,University Ride-Sharing Mobile Application</h3>
+      <p>• Designed and implemented a full-featured ride-sharing app with real-time tracking, payment integration, and
+automated workflows
+<br>
+• Integrated KYC verification, Firebase-based document management, and secure payment flows into a single
+digital application.</p>
+    </div>
+    <div class="">
+      <div class="commit"></div>
+      <h3> </h3>
+      <p></p>
+    </div>
+  </div>
+</section>
+
+<section id="projects">
+  <div class="section-label">02 — projects</div>
+
+  <div class="proj">
+    <h3>Employee Salary Prediction</h3>
+    <span class="stack"></span>
+    <p>Built an end-to-end ML pipeline to predict employee salaries from age, education, experience, job title, location,
+industry, and skills, achieving R² of 0.95
+Compared 5 regression models (Linear Regression, Decision Tree, Random Forest, Gradient Boosting, XGBoost)
+and selected the best performer based on rigorous evaluation metrics
+Engineered features including ordinal encoding, frequency encoding, and multi-hot skill encoding to improve
+model accuracy and handle unseen categories at inference
+Implemented explainable AI using feature importance analysis to identify key salary drivers (education, location,
+company size, experience)
+Deployed an interactive Streamlit web app with real-time salary prediction, model insights dashboard, and bulk
+employee comparison with CSV export.</p>
+    <a class="link" href="https://github.com/askerjr/-Employee-Salary-Prediction-">view project →</a>
+  </div>
+
+  <div class="proj">
+    <h3>Weather Forecasting Web Application</h3>
+    <span class="stack"></span>
+    <p>• Built an ML-based weather forecasting application using historical meteorological datasets and supervised
+learning models.
+<br>
+• Applied feature engineering and data preprocessing pipelines; integrated visualization tools to display
+prediction outputs and trend analysis.
+</p>
+    <a class="link" href="https://github.com/askerjr/Weather-Forecasting-Using-Machine-Learning">view project →</a>
+  </div>
+
+  <div class="proj">
+    <h3>Artificial Bee Colony – Genetic Algorithm (TSP Optimization)</h3>
+    <span class="stack"></span>
+    <p>• Designed a hybrid optimization algorithm combining Artificial Bee Colony (ABC) and Genetic Algorithm
+(GA) for intelligent route optimization.
+<br>
+• Applied the algorithm to the Travelling Salesman Problem (TSP) to compute near-optimal routes with
+minimum total distance
+.</p>
+    
+  </div>
+
+<div class="proj">
+    <h3>Parkinson’s Disease Detection Using (Machine Learning)</h3>
+    <span class="stack"></span>
+    <p>• Built a Parkinson’s disease detection model on imbalanced clinical data using SMOTE and class-weighting
+techniques.
+<br>
+• Applied RFECV, Mutual Information, and PCA for feature selection and dimensionality reduction.
+<br>
+• Improved SVM and Random Forest classifier performance through systematic feature engineering and model
+tuning.</p>
+    
+  </div>
+
+
+<div class="proj">
+    <h3>University Ride-Sharing Mobile Application</h3>
+    <span class="stack"></span>
+    <p>• Designed and implemented a full-featured ride-sharing app with real-time tracking, payment integration, andautomated workflows
+<br>
+• Integrated KYC verification, Firebase-based document management, and secure payment flows into a single
+digital application</p>
+    
+  </div>
+
+
+
+
+
+
+
+
+</section>
+
+<section id="about">
+  <div class="section-label">03 — about</div>
+  <p style="max-width:640px; color:var(--slate);">
+    I'm Mohamed Asker J, an ML Engineer passionate about turning data into decisions. I work across the full machine learning lifecycle — from data preprocessing and feature engineering to model deployment — building AI-driven solutions for real-world applications.
+  </p>
+</section>
+
+<section id="contact">
+  <div class="section-label">04 — contact</div>
+  <div class="contact-row">
+    <a href="mailto:askerjr315@gmail.com">askerjr315@gmail.com</a>
+    <a href="https://github.com/askerjr">github</a>
+    <a href="https://www.linkedin.com/in/mohamed-asker-94797b3a8/">linkedin</a>
+    
+  </div>
+</section>
+
+<footer>
+  © 2026 Mohamed Asker J 
+</footer>
+
+<script>
+(function(){
+  var canvas = document.getElementById('scene-canvas');
+  var hero = document.getElementById('hero');
+
+  var scene = new THREE.Scene();
+  var camera = new THREE.PerspectiveCamera(55, hero.clientWidth / hero.clientHeight, 0.1, 100);
+  camera.position.z = 9;
+
+  var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setSize(hero.clientWidth, hero.clientHeight);
+
+  var amber = 0xFFB000;
+  var slate = 0x3A4256;
+
+  var coreGeo = new THREE.IcosahedronGeometry(2.4, 1);
+  var coreMat = new THREE.MeshBasicMaterial({ color: amber, wireframe: true, transparent: true, opacity: 0.55 });
+  var core = new THREE.Mesh(coreGeo, coreMat);
+  scene.add(core);
+
+  var orbiters = [];
+  var orbitGeos = [
+    new THREE.OctahedronGeometry(0.35),
+    new THREE.TorusGeometry(0.32, 0.1, 8, 16),
+    new THREE.IcosahedronGeometry(0.3, 0)
+  ];
+  for (var i = 0; i < orbitGeos.length; i++) {
+    var mat = new THREE.MeshBasicMaterial({ color: 0xF5F3EE, wireframe: true, transparent: true, opacity: 0.8 });
+    var mesh = new THREE.Mesh(orbitGeos[i], mat);
+    var radius = 4 + i * 0.9;
+    orbiters.push({ mesh: mesh, radius: radius, speed: 0.15 + i * 0.07, offset: i * 2.1 });
+    scene.add(mesh);
+  }
+
+  var particleCount = 220;
+  var particleGeo = new THREE.BufferGeometry();
+  var positions = new Float32Array(particleCount * 3);
+  for (var p = 0; p < particleCount; p++) {
+    positions[p*3]   = (Math.random() - 0.5) * 30;
+    positions[p*3+1] = (Math.random() - 0.5) * 30;
+    positions[p*3+2] = (Math.random() - 0.5) * 30;
+  }
+  particleGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+  var particleMat = new THREE.PointsMaterial({ color: slate, size: 0.05, transparent: true, opacity: 0.6 });
+  var particles = new THREE.Points(particleGeo, particleMat);
+  scene.add(particles);
+
+  var mouseX = 0, mouseY = 0;
+  window.addEventListener('mousemove', function(e){
+    mouseX = (e.clientX / window.innerWidth - 0.5);
+    mouseY = (e.clientY / window.innerHeight - 0.5);
+  });
+
+  var clock = new THREE.Clock();
+
+  function animate(){
+    requestAnimationFrame(animate);
+    var t = clock.getElapsedTime();
+
+    core.rotation.x = t * 0.08;
+    core.rotation.y = t * 0.12;
+
+    orbiters.forEach(function(o){
+      var angle = t * o.speed + o.offset;
+      o.mesh.position.x = Math.cos(angle) * o.radius;
+      o.mesh.position.z = Math.sin(angle) * o.radius;
+      o.mesh.position.y = Math.sin(angle * 1.3) * 1.2;
+      o.mesh.rotation.x += 0.01;
+      o.mesh.rotation.y += 0.015;
+    });
+
+    particles.rotation.y = t * 0.01;
+
+    camera.position.x += (mouseX * 2.2 - camera.position.x) * 0.03;
+    camera.position.y += (-mouseY * 1.4 - camera.position.y) * 0.03;
+    camera.lookAt(scene.position);
+
+    renderer.render(scene, camera);
+  }
+  animate();
+
+  window.addEventListener('resize', function(){
+    var w = hero.clientWidth, h = hero.clientHeight;
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w, h);
+  });
+})();
+</script>
+
+</body>
+</html>
