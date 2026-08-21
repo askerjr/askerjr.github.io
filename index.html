@@ -259,7 +259,39 @@ digital application.</p>
 
 <section id="projects">
   <div class="section-label">02 — projects</div>
+<div class="proj">
+    <h3>RAG-Chat-with-your-PDFs-app</h3>
+    <span class="stack"></span>
+    <p>• Upload a PDF, ask questions about it, and get answers grounded in the actual document — not the model's general knowledge.
+The pipeline:
+→ PDF gets chunked into overlapping text segments
+→ Each chunk is embedded into a vector using a local Hugging Face model (BAAI/bge-small)
+→ Vectors are indexed with FAISS for fast similarity search
+→ On a question, the most relevant chunks are retrieved and passed to Gemini as context
+→ The model generates an answer grounded in those chunks, with sources shown
+Stack: LangChain, FAISS, Hugging Face sentence-transformers, Google Gemini API, Streamlit
 
+</p>
+    <a class="link" href="https://github.com/askerjr/RAG-Chat-with-your-PDFs-app">view project →</a>
+  </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
   <div class="proj">
     <h3>Employee Salary Prediction</h3>
     <span class="stack"></span>
